@@ -1,5 +1,5 @@
 from datetime import datetime
-from db.mongo_client import company_collection, decision_collection
+from db.mongo_client import company_collection, decision_collection ,stock_collection
 
 
 def save_company_state(state):
@@ -37,3 +37,13 @@ def save_decision_log(
     }
 
     decision_collection.insert_one(decision_record)
+def save_stock_candle(month, candle, market_cap):
+
+    stock_collection.insert_one({
+        "month": month,
+        "open": candle["open"],
+        "high": candle["high"],
+        "low": candle["low"],
+        "close": candle["close"],
+        "market_cap": market_cap
+    })

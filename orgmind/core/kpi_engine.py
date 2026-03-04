@@ -11,16 +11,23 @@ def apply_decision(company, decision, event):
 
     if "product_quality" in event["impact"]:
         company.product_quality += event["impact"]["product_quality"]
-        company.technical_debt += 0.2  # infra issues increase debt
+        company.technical_debt += 0.2
+
+    # -----------------------------
+    # Temporary Monthly Spend
+    # -----------------------------
+    extra_spend = 0
 
     # -----------------------------
     # Apply Decision Effects
     # -----------------------------
     if decision:
-        proposed_budget = decision.get("budget_change", 0)
-        company.burn_rate += proposed_budget
 
-        # Growth multipliers influenced by quality & reputation
+        proposed_budget = decision.get("budget_change", 0)
+
+        # Budget change becomes temporary campaign spend
+        extra_spend += proposed_budget
+
         base_user_growth = decision.get("user_growth", 0)
         base_revenue_growth = decision.get("revenue_growth", 0)
 
@@ -35,6 +42,7 @@ def apply_decision(company, decision, event):
 
         # Apply technical impact if exists
         if "tech_impact" in decision:
+
             tech = decision["tech_impact"]
 
             company.product_quality += tech.get("product_quality_change", 0)
@@ -44,19 +52,22 @@ def apply_decision(company, decision, event):
     # Technical Debt Effects
     # -----------------------------
     if company.technical_debt > 0:
+
         debt_penalty = company.technical_debt * 0.05
         company.product_quality -= debt_penalty
-        company.burn_rate += int(company.technical_debt * 500)
 
-    # Debt cannot go negative
+        extra_spend += int(company.technical_debt * 500)
+
     company.technical_debt = max(0, round(company.technical_debt, 2))
 
     # -----------------------------
     # Churn Model
     # -----------------------------
-    base_churn = 0.02  # 2% monthly
+    base_churn = 0.02
+
     if company.product_quality < 5:
         base_churn += 0.03
+
     if company.reputation < 5:
         base_churn += 0.02
 
@@ -66,7 +77,18 @@ def apply_decision(company, decision, event):
     # -----------------------------
     # Financial Flow
     # -----------------------------
-    company.cash += company.revenue
-    company.cash -= company.burn_rate
+    total_burn = company.burn_rate + extra_spend
 
+    company.cash += company.revenue
+    company.cash -= total_burn
+
+    # -----------------------------
+    # Reputation Bounds
+    # -----------------------------
+    company.reputation = max(2, min(company.reputation, 10))
+
+    # -----------------------------
+    # Simulation Step Progress
+    # -----------------------------
     company.month += 1
+    company.months_since_funding += 1

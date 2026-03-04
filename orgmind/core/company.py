@@ -8,6 +8,14 @@ class Company:
         self.product_quality = config.INITIAL_PRODUCT_QUALITY
         self.reputation = config.INITIAL_REPUTATION
         self.technical_debt = 0.0
+        self.valuation = 0
+        self.total_shares = 1000000
+        self.founder_ownership = 1.0
+        self.last_funding_round = None
+        self.months_since_funding = 12
+        self.is_public = False
+        self.share_price = 0
+        self.market_cap = 0
 
     def runway(self):
         if self.burn_rate == 0:
@@ -25,4 +33,11 @@ class Company:
             "product_quality": self.product_quality,
             "reputation": self.reputation,
             "technical_debt": self.technical_debt,
+            "valuation": self.valuation,
+            "founder_ownership": round(self.founder_ownership, 2),
+            "last_funding_round": self.last_funding_round,
+            "months_since_funding": self.months_since_funding,
+            "is_public": self.is_public,
+            "share_price": self.share_price,
+            "market_cap": self.market_cap,
         }
