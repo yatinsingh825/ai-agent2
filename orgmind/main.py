@@ -6,12 +6,20 @@ from agents.finance import FinanceAgent
 from agents.cto import CTOAgent
 from core.kpi_engine import apply_decision
 from core.decision_engine import negotiate_decision
-from db.repository import save_company_state, save_decision_log
+
+from db.repository import save_company_state, save_decision_log, save_stock_candle
+
 from finance.valuation_engine import calculate_valuation
 from finance.funding_engine import attempt_funding
+
 from market.ipo_engine import attempt_ipo
 from market.stock_engine import generate_candle
-from db.repository import save_stock_candle
+
+import uuid
+
+
+simulation_id = str(uuid.uuid4())
+print("Simulation ID:", simulation_id)
 
 
 def run_simulation():
@@ -28,25 +36,36 @@ def run_simulation():
         print(f"Month {company.month}")
         print("==============================")
 
+        # -----------------------------
+        # Current State
+        # -----------------------------
         state = company.summary()
         event = generate_event()
 
         print("Market Event:", event["name"])
         print("Current KPIs:", state)
 
-        # 1️⃣ CEO proposes
+        # -----------------------------
+        # CEO Decision
+        # -----------------------------
         ceo_decision = ceo.propose(state, event["name"])
         print("CEO Proposal:", ceo_decision)
 
-        # 2️⃣ Finance evaluates
+        # -----------------------------
+        # Finance Review
+        # -----------------------------
         finance_feedback = finance.evaluate(state, ceo_decision)
         print("Finance Response:", finance_feedback)
 
-        # 3️⃣ CTO evaluates
+        # -----------------------------
+        # CTO Review
+        # -----------------------------
         cto_feedback = cto.evaluate(state, ceo_decision)
         print("CTO Response:", cto_feedback)
 
-        # 4️⃣ Negotiated final decision
+        # -----------------------------
+        # Final Negotiated Decision
+        # -----------------------------
         final_decision = negotiate_decision(
             company,
             ceo_decision,
@@ -56,10 +75,13 @@ def run_simulation():
 
         print("Final Negotiated Decision:", final_decision)
 
-        # Save state BEFORE changes
-        save_company_state(company.summary())
+        # -----------------------------
+        # Save state before applying decision
+        # -----------------------------
+        save_company_state(simulation_id, company.summary())
 
         save_decision_log(
+            simulation_id,
             company.month,
             event["name"],
             ceo_decision,
@@ -68,33 +90,37 @@ def run_simulation():
             final_decision
         )
 
-        # 5️⃣ Apply decision
+        # -----------------------------
+        # Apply decision to company
+        # -----------------------------
         apply_decision(company, final_decision, event)
 
-        # --------------------------
-        # 💀 Bankruptcy Detection
-        # --------------------------
-        if company.cash < -50000:
+        # -----------------------------
+        # Bankruptcy Check
+        # -----------------------------
+        if company.bankrupt:
             print("💀 Company Bankrupt — Simulation Ending")
             break
 
-        # --------------------------
-        # 🚀 Valuation Calculation
-        # --------------------------
+        # -----------------------------
+        # Valuation Update
+        # -----------------------------
         valuation = calculate_valuation(company)
+        company.valuation = valuation
+
         print("Valuation:", valuation)
 
-        # --------------------------
-        # 🚀 IPO Attempt
-        # --------------------------
+        # -----------------------------
+        # IPO Attempt
+        # -----------------------------
         ipo_result = attempt_ipo(company)
 
         if ipo_result:
             print("🚀 IPO Completed:", ipo_result)
 
-        # --------------------------
-        # 📈 Public Market Simulation
-        # --------------------------
+        # -----------------------------
+        # Public Market Simulation
+        # -----------------------------
         if company.is_public:
 
             candle = generate_candle(company, company.share_price)
@@ -102,24 +128,35 @@ def run_simulation():
             print("📈 Monthly Stock Candle:", candle)
 
             save_stock_candle(
+                simulation_id,
                 company.month,
                 candle,
                 company.market_cap
             )
 
-        # --------------------------
-        # 💰 Funding Logic
-        # --------------------------
-        if company.runway() < 2 and company.months_since_funding > 6:
+        # -----------------------------
+        # Funding Logic
+        # -----------------------------
+        if (
+            company.users > 1500
+            and company.product_quality > 6
+            and company.months_since_funding > 6
+        ):
 
-            print("⚡ Funding consideration triggered.")
+            print("⚡ Funding consideration triggered")
 
             funding_result = attempt_funding(company)
 
             if funding_result:
                 print("💰 Funding Round Closed:", funding_result)
 
-    print("\nFinal Company State:")
+    # -----------------------------
+    # Final Output
+    # -----------------------------
+    print("\n==============================")
+    print("Final Company State")
+    print("==============================")
+
     print(company.summary())
 
 

@@ -1,26 +1,33 @@
 def calculate_valuation(company):
 
-    revenue_component = company.revenue * 6
+    # -----------------------------
+    # Core Valuation Components
+    # -----------------------------
 
-    user_component = company.users * 50
+    revenue_component = company.revenue * 8
+    user_component = company.users * 20
 
-    reputation_bonus = company.reputation * 5000
+    quality_component = company.product_quality * 5000
+    reputation_component = company.reputation * 3000
 
-    debt_penalty = company.technical_debt * 30000
+    # -----------------------------
+    # Technical Debt Penalty
+    # -----------------------------
+    debt_penalty = company.technical_debt * 10000
 
-    runway_bonus = 0
-    if company.runway() > 3:
-        runway_bonus = 20000
-
+    # -----------------------------
+    # Total Valuation
+    # -----------------------------
     valuation = (
         revenue_component
         + user_component
-        + reputation_bonus
-        + runway_bonus
+        + quality_component
+        + reputation_component
         - debt_penalty
     )
 
-    valuation = max(50000, int(valuation))
+    # Prevent unrealistic low valuations
+    valuation = max(50_000, int(valuation))
 
     company.valuation = valuation
 

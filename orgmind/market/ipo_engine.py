@@ -1,13 +1,17 @@
 def attempt_ipo(company):
 
+    # Already public
     if company.is_public:
         return None
 
-    # IPO requirements
+    # --------------------------------
+    # IPO Requirements (Realistic)
+    # --------------------------------
     if (
-        company.revenue > 15000
+        company.valuation > 1_000_000
+        and company.users > 10_000
         and company.reputation > 6
-        and company.runway() > 2
+        and company.runway() > 3
     ):
 
         company.is_public = True
