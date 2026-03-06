@@ -1,13 +1,27 @@
+from operations.churn_model import apply_churn
+from operations.technical_debt import apply_technical_debt_penalties
+
+
 def apply_decision(company, decision, event):
+
+    # -----------------------------
+    # Event Reputation Effects
+    # -----------------------------
+    EVENT_REPUTATION_IMPACT = {
+        "Positive Press Coverage": 0.5,
+        "Viral Social Media Trend": 0.3,
+        "Competitor Launch": -0.3,
+        "Tech Infrastructure Issue": -0.5
+    }
+
+    rep_change = EVENT_REPUTATION_IMPACT.get(event["name"], 0)
+    company.reputation += rep_change
 
     # -----------------------------
     # Apply Market Event Effects
     # -----------------------------
     if "users" in event["impact"]:
         company.users += int(company.users * event["impact"]["users"])
-
-    if "reputation" in event["impact"]:
-        company.reputation += event["impact"]["reputation"]
 
     if "product_quality" in event["impact"]:
         company.product_quality += event["impact"]["product_quality"]
@@ -24,8 +38,6 @@ def apply_decision(company, decision, event):
     if decision:
 
         proposed_budget = decision.get("budget_change", 0)
-
-        # Campaign spend
         extra_spend += proposed_budget
 
         base_user_growth = decision.get("user_growth", 0)
@@ -36,20 +48,18 @@ def apply_decision(company, decision, event):
         quality_multiplier = max(0.5, company.product_quality / 10)
         reputation_multiplier = max(0.5, company.reputation / 10)
 
-        adjusted_user_growth = base_user_growth * quality_multiplier * reputation_multiplier
+        adjusted_user_growth = (
+            base_user_growth * quality_multiplier * reputation_multiplier
+        )
 
-        # -----------------------------
-        # Reputation Penalty Layer
-        # -----------------------------
+        # Reputation penalties
         if company.reputation < 5:
             adjusted_user_growth *= 0.6
 
         if company.reputation < 4:
             adjusted_user_growth *= 0.3
 
-        # -----------------------------
-        # Apply User Growth
-        # -----------------------------
+        # Apply growth
         company.users += int(company.users * adjusted_user_growth)
 
         # SaaS revenue model
@@ -61,20 +71,30 @@ def apply_decision(company, decision, event):
         if "tech_impact" in decision:
 
             tech = decision["tech_impact"]
+            quality_change = tech.get("product_quality_change", 0)
 
-            company.product_quality += tech.get("product_quality_change", 0)
-            company.technical_debt += tech.get("technical_debt_change", 0)
+            # Redirect overflow improvements
+            if company.product_quality >= 9.5:
+
+                company.reputation += quality_change * 0.3
+                company.technical_debt = max(
+                    0,
+                    company.technical_debt - 0.05
+                )
+
+            else:
+
+                company.product_quality += quality_change
+
+            company.technical_debt += tech.get(
+                "technical_debt_change",
+                0
+            )
 
     # -----------------------------
     # Infrastructure Scaling
     # -----------------------------
     company.infra_cost = 1000 + (company.users * 0.5)
-
-    # -----------------------------
-    # Technical Debt Infrastructure Penalty
-    # -----------------------------
-    debt_penalty = company.technical_debt * 500
-    company.infra_cost += debt_penalty
 
     # -----------------------------
     # Engineer Hiring Scaling
@@ -85,28 +105,23 @@ def apply_decision(company, decision, event):
         company.engineers = required_engineers
 
     # -----------------------------
-    # Technical Debt Effects
+    # Apply Technical Debt Model
     # -----------------------------
-    if company.technical_debt > 0:
+    severity = apply_technical_debt_penalties(company)
 
-        debt_quality_penalty = company.technical_debt * 0.05
-        company.product_quality -= debt_quality_penalty
-
-    company.technical_debt = max(0, round(company.technical_debt, 2))
+    if severity in ("medium", "critical"):
+        print(f"   🔥 Tech debt severity: {severity.upper()}")
 
     # -----------------------------
-    # Churn Model
+    # Apply Churn Model
     # -----------------------------
-    base_churn = 0.02
+    users_lost, churn_rate = apply_churn(company)
 
-    if company.product_quality < 5:
-        base_churn += 0.03
-
-    if company.reputation < 5:
-        base_churn += 0.02
-
-    churned_users = int(company.users * base_churn)
-    company.users -= churned_users
+    if churn_rate > 0.05:
+        print(
+            f"   ⚠️ High churn: {churn_rate:.1%} "
+            f"({users_lost} users lost)"
+        )
 
     # -----------------------------
     # Recalculate Burn Rate
@@ -121,22 +136,46 @@ def apply_decision(company, decision, event):
     company.cash += company.revenue
     company.cash -= total_burn
 
-    # Bankruptcy check
     if company.cash <= 0:
         company.bankrupt = True
 
     # -----------------------------
     # Reputation Recovery
     # -----------------------------
-    if company.product_quality > 7:
-        company.reputation += 0.2
+    if company.product_quality >= 8.0:
+
+        company.reputation = min(
+            10,
+            company.reputation + 0.15
+        )
+
+    elif company.product_quality >= 6.5:
+
+        company.reputation = min(
+            10,
+            company.reputation + 0.05
+        )
 
     # -----------------------------
     # Metric Bounds
     # -----------------------------
-    company.product_quality = max(0, min(company.product_quality, 10))
-    company.reputation = max(1, min(company.reputation, 10))
-    company.technical_debt = max(0, min(company.technical_debt, 10))
+    company.product_quality = max(
+        0,
+        min(company.product_quality, 10)
+    )
+
+    # Reputation floor prevents collapse
+    company.reputation = max(
+        1.0,
+        min(company.reputation, 10)
+    )
+
+    company.technical_debt = max(
+        0,
+        min(company.technical_debt, 10)
+    )
+
+    company.users = max(0, company.users)
 
     # -----------------------------
     # Simulation Step

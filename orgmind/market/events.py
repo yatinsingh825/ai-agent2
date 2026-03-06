@@ -2,22 +2,36 @@ import random
 
 EVENTS = [
     {
-        "name": "Competitor Launch",
-        "impact": {"reputation": -0.5}
+        "name": "Positive Press Coverage",
+        "impact": {"reputation": 0.8},
+        "weight": 30
     },
     {
         "name": "Viral Social Media Trend",
-        "impact": {"users": 0.10}
+        "impact": {"users": 0.10},
+        "weight": 25
+    },
+    {
+        "name": "Competitor Launch",
+        "impact": {"reputation": -0.5},
+        "weight": 25
     },
     {
         "name": "Tech Infrastructure Issue",
-        "impact": {"product_quality": -0.7}
-    },
-    {
-        "name": "Positive Press Coverage",
-        "impact": {"reputation": 0.8}
+        "impact": {"product_quality": -0.7},
+        "weight": 20
     },
 ]
 
+
 def generate_event():
-    return random.choice(EVENTS)
+
+    weights = [event["weight"] for event in EVENTS]
+
+    chosen_event = random.choices(
+        EVENTS,
+        weights=weights,
+        k=1
+    )[0]
+
+    return chosen_event

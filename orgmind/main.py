@@ -127,6 +127,10 @@ def run_simulation():
 
             print("📈 Monthly Stock Candle:", candle)
 
+            # IMPORTANT FIX:
+            # Keep valuation aligned with market cap after IPO
+            company.valuation = company.market_cap
+
             save_stock_candle(
                 simulation_id,
                 company.month,
@@ -149,6 +153,15 @@ def run_simulation():
 
             if funding_result:
                 print("💰 Funding Round Closed:", funding_result)
+            else:
+                # Debug info if funding did not close
+                print(
+                    f"   ↳ Funding not closed "
+                    f"(round={company.last_funding_round}, "
+                    f"months_since={company.months_since_funding}, "
+                    f"users={company.users}, "
+                    f"revenue={company.revenue})"
+                )
 
     # -----------------------------
     # Final Output

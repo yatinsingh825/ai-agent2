@@ -1,85 +1,100 @@
+import random
+
+
+def close_round(company, round_name, amount, dilution):
+
+    company.cash += amount
+    company.valuation += amount
+    company.founder_ownership *= (1 - dilution)
+
+    company.last_funding_round = round_name
+    company.months_since_funding = 0
+
+    return {
+        "round": round_name,
+        "raised": amount,
+        "valuation": company.valuation,
+        "dilution": dilution
+    }
+
+
 def attempt_funding(company):
 
-    # ---------------------------------
-    # Do not fund bankrupt companies
-    # ---------------------------------
     if company.bankrupt:
         return None
 
-    # ---------------------------------
-    # Cooldown Check
-    # ---------------------------------
     if company.months_since_funding < 6:
         return None
+
+    if hasattr(company, "last_funding_attempt"):
+        if company.month - company.last_funding_attempt < 3:
+            return None
+
+    company.last_funding_attempt = company.month
+
+    investor_interest = random.random()
+
+    # ---------------------------------
+    # Pre-Seed Bridge Round
+    # ---------------------------------
+    if company.last_funding_round is None:
+
+        if (
+            company.months_since_funding >= 15
+            and company.users >= 700
+            and company.cash < 80000
+        ):
+
+            if investor_interest < 0.7:
+
+                return close_round(
+                    company,
+                    "Pre-Seed Bridge",
+                    60000,
+                    0.07
+                )
 
     # ---------------------------------
     # Seed Round
     # ---------------------------------
-    if (
-        company.last_funding_round is None
-        and company.users > 1200
-        and company.product_quality > 6
-        and company.revenue > 20000
-    ):
+    if company.last_funding_round is None:
 
-        investment = 100000
+        if (
+            company.users >= 1500
+            and company.product_quality >= 6
+            and company.reputation >= 4
+        ):
 
-        # Add cash
-        company.cash += investment
+            if investor_interest < 0.75:
 
-        # Increase valuation
-        company.valuation += investment * 3
-
-        # Apply dilution
-        dilution = 0.10
-        company.founder_ownership *= (1 - dilution)
-
-        # Update funding state
-        company.last_funding_round = "Seed"
-        company.months_since_funding = 0
-
-        return {
-            "round": "Seed",
-            "raised": investment,
-            "valuation": company.valuation,
-            "dilution": dilution
-        }
+                return close_round(
+                    company,
+                    "Seed",
+                    100000,
+                    0.10
+                )
 
     # ---------------------------------
     # Series A
     # ---------------------------------
-    if (
-        company.last_funding_round == "Seed"
-        and company.users > 5000
-        and company.revenue > 60000
-    ):
+    if company.last_funding_round in ("Seed", "Pre-Seed Bridge"):
 
-        # Protect against invalid valuation
-        if company.valuation <= 0:
-            return None
+        if (
+            company.months_since_funding >= 6
+            and company.revenue >= 40000
+            and company.users >= 3000
+            and company.valuation >= 500000
+        ):
 
-        raise_amount = int(company.valuation * 0.25)
+            if investor_interest < 0.80:
 
-        dilution = 0.20
+                amount = int(company.valuation * 0.25)
 
-        # Add funding
-        company.cash += raise_amount
-
-        # Ownership dilution
-        company.founder_ownership *= (1 - dilution)
-
-        # Increase valuation
-        company.valuation += raise_amount
-
-        # Update funding state
-        company.last_funding_round = "Series A"
-        company.months_since_funding = 0
-
-        return {
-            "round": "Series A",
-            "raised": raise_amount,
-            "valuation": company.valuation,
-            "dilution": dilution
-        }
+                return close_round(
+                    company,
+                    "Series A",
+                    amount,
+                    0.20
+                )
 
     return None
