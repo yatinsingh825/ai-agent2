@@ -87,7 +87,7 @@ def run_simulation():
         print("Final Negotiated Decision:", final_decision)
 
         # -----------------------------
-        # Save state
+        # Save state BEFORE applying decision
         # -----------------------------
         save_company_state(
             simulation_id,
@@ -122,10 +122,9 @@ def run_simulation():
             break
 
         # -----------------------------
-        # Valuation Update
+        # Private Valuation Update
         # -----------------------------
         valuation = calculate_valuation(company)
-
         company.valuation = valuation
 
         print("Valuation:", valuation)
@@ -136,7 +135,6 @@ def run_simulation():
         ipo_result = attempt_ipo(company)
 
         if ipo_result:
-
             print("🚀 IPO Completed:", ipo_result)
 
         # -----------------------------
@@ -151,7 +149,10 @@ def run_simulation():
 
             print("📈 Monthly Stock Candle:", candle)
 
-            # Sync valuation with market cap (FIX)
+            # -----------------------------
+            # CRITICAL FIX
+            # Sync valuation with market cap
+            # -----------------------------
             company.valuation = company.market_cap
 
             save_stock_candle(
@@ -193,7 +194,6 @@ def run_simulation():
     print("==============================")
 
     final_state = company.summary()
-
     print(final_state)
 
     # -----------------------------

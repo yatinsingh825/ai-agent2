@@ -28,10 +28,11 @@ def attempt_funding(company):
     # ---------------------------------
     # Pre-Seed Bridge Round
     # ---------------------------------
+
     if company.last_funding_round is None:
 
         if (
-            company.months_since_funding >= 15
+            company.months_since_funding >= 3
             and company.users >= 700
             and company.cash < 150000
             and company.product_quality >= 5
@@ -52,6 +53,7 @@ def attempt_funding(company):
     # ---------------------------------
     # Seed Round
     # ---------------------------------
+
     if company.last_funding_round is None:
 
         if (
@@ -70,6 +72,7 @@ def attempt_funding(company):
     # ---------------------------------
     # Series A
     # ---------------------------------
+
     if company.last_funding_round in ("Seed", "Pre-Seed Bridge"):
 
         if (
@@ -89,19 +92,19 @@ def attempt_funding(company):
             )
 
     # ---------------------------------
-    # Series B
+    # Series B  ⭐ FIXED
     # ---------------------------------
+
     if company.last_funding_round == "Series A":
 
         if (
             company.months_since_funding >= 6
-            and company.revenue >= 100000
-            and company.users >= 5000
-            and company.is_public is False
-            and company.valuation >= 1000000
+            and company.revenue >= 80000
+            and company.users >= 4000
+            and company.valuation >= 700000
         ):
 
-            amount = int(company.valuation * 0.30)
+            amount = int(company.valuation * 0.35)
 
             return close_round(
                 company,
