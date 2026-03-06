@@ -1,6 +1,3 @@
-import random
-
-
 def close_round(company, round_name, amount, dilution):
 
     company.cash += amount
@@ -9,6 +6,8 @@ def close_round(company, round_name, amount, dilution):
 
     company.last_funding_round = round_name
     company.months_since_funding = 0
+
+    print(f"   💰 {round_name} funding secured: ${amount:,}")
 
     return {
         "round": round_name,
@@ -26,14 +25,6 @@ def attempt_funding(company):
     if company.months_since_funding < 6:
         return None
 
-    if hasattr(company, "last_funding_attempt"):
-        if company.month - company.last_funding_attempt < 3:
-            return None
-
-    company.last_funding_attempt = company.month
-
-    investor_interest = random.random()
-
     # ---------------------------------
     # Pre-Seed Bridge Round
     # ---------------------------------
@@ -42,17 +33,21 @@ def attempt_funding(company):
         if (
             company.months_since_funding >= 15
             and company.users >= 700
-            and company.cash < 80000
+            and company.cash < 150000
+            and company.product_quality >= 5
         ):
 
-            if investor_interest < 0.7:
+            print(
+                f"   💡 Bridge round triggered "
+                f"(users={company.users}, cash=${company.cash:,.0f})"
+            )
 
-                return close_round(
-                    company,
-                    "Pre-Seed Bridge",
-                    60000,
-                    0.07
-                )
+            return close_round(
+                company,
+                "Pre-Seed Bridge",
+                75000,
+                0.07
+            )
 
     # ---------------------------------
     # Seed Round
@@ -60,19 +55,17 @@ def attempt_funding(company):
     if company.last_funding_round is None:
 
         if (
-            company.users >= 1500
-            and company.product_quality >= 6
-            and company.reputation >= 4
+            company.users >= 1300
+            and company.product_quality >= 5.5
+            and company.reputation >= 3.5
         ):
 
-            if investor_interest < 0.75:
-
-                return close_round(
-                    company,
-                    "Seed",
-                    100000,
-                    0.10
-                )
+            return close_round(
+                company,
+                "Seed",
+                100000,
+                0.10
+            )
 
     # ---------------------------------
     # Series A
@@ -81,20 +74,40 @@ def attempt_funding(company):
 
         if (
             company.months_since_funding >= 6
-            and company.revenue >= 40000
-            and company.users >= 3000
-            and company.valuation >= 500000
+            and company.revenue >= 35000
+            and company.users >= 2500
+            and company.valuation >= 400000
         ):
 
-            if investor_interest < 0.80:
+            amount = int(company.valuation * 0.25)
 
-                amount = int(company.valuation * 0.25)
+            return close_round(
+                company,
+                "Series A",
+                amount,
+                0.20
+            )
 
-                return close_round(
-                    company,
-                    "Series A",
-                    amount,
-                    0.20
-                )
+    # ---------------------------------
+    # Series B
+    # ---------------------------------
+    if company.last_funding_round == "Series A":
+
+        if (
+            company.months_since_funding >= 6
+            and company.revenue >= 100000
+            and company.users >= 5000
+            and company.is_public is False
+            and company.valuation >= 1000000
+        ):
+
+            amount = int(company.valuation * 0.30)
+
+            return close_round(
+                company,
+                "Series B",
+                amount,
+                0.15
+            )
 
     return None

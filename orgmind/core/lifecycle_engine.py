@@ -3,49 +3,53 @@ class LifecycleEngine:
     @staticmethod
     def process(company):
 
-        # Seed funding
+        if company.bankrupt:
+            return
+
+        # --------------------------------
+        # Hiring Logic
+        # --------------------------------
+        revenue_per_engineer = company.revenue / max(1, company.engineers)
+
         if (
-            company.last_funding_round is None
-            and company.valuation > 200000
+            company.runway_months > 6
+            and revenue_per_engineer > 6000
+            and company.cash > 80000
         ):
-            company.cash += 200000
-            company.last_funding_round = "Seed"
-            company.founder_ownership *= 0.85
 
-            print("🚀 Seed Funding Raised: $200k")
+            company.engineers += 1
 
+            engineer_salary = 4000
+            company.burn_rate += engineer_salary
 
-        # Series A
-        elif (
-            company.last_funding_round == "Seed"
-            and company.valuation > 800000
-        ):
-            company.cash += 1000000
-            company.last_funding_round = "Series A"
-            company.founder_ownership *= 0.8
+            print(f"   👷 Hired engineer #{company.engineers}")
 
-            print("🚀 Series A Raised: $1M")
+        # --------------------------------
+        # Late Stage Efficiency
+        # --------------------------------
+        if company.engineers > 20:
 
+            efficiency_bonus = 0.02 * (company.engineers / 10)
+            company.product_quality = min(
+                10,
+                company.product_quality + efficiency_bonus
+            )
 
-        # Series B
-        elif (
-            company.last_funding_round == "Series A"
-            and company.valuation > 3000000
-        ):
-            company.cash += 5000000
-            company.last_funding_round = "Series B"
-            company.founder_ownership *= 0.8
-
-            print("🚀 Series B Raised: $5M")
-
-
-        # IPO
-        elif (
+        # --------------------------------
+        # IPO Event
+        # --------------------------------
+        if (
             not company.is_public
-            and company.valuation > 10000000
-            and company.users > 50000
+            and company.valuation >= 10000000
+            and company.users >= 50000
+            and company.revenue >= 200000
+            and company.reputation >= 7
         ):
+
             company.is_public = True
+
             company.share_price = company.valuation / 1000000
 
-            print("📈 IPO Event: Company is now public!")
+            print("\n📈 IPO EVENT: Company is now public!")
+            print(f"   Share Price: ${company.share_price:.2f}")
+            print(f"   Market Cap: ${company.valuation:,.0f}")

@@ -11,7 +11,8 @@ def apply_decision(company, decision, event):
         "Positive Press Coverage": 0.5,
         "Viral Social Media Trend": 0.3,
         "Competitor Launch": -0.3,
-        "Tech Infrastructure Issue": -0.5
+        "Tech Infrastructure Issue": -0.5,
+        "Regulatory Tailwind": 0.4
     }
 
     rep_change = EVENT_REPUTATION_IMPACT.get(event["name"], 0)
@@ -37,32 +38,54 @@ def apply_decision(company, decision, event):
     # -----------------------------
     if decision:
 
-        proposed_budget = decision.get("budget_change", 0)
-        extra_spend += proposed_budget
+        budget_change = decision.get("budget_change", 0)
+
+        # Apply marketing budget scaling (FIX)
+        company.marketing_budget = max(
+            1000,
+            company.marketing_budget + int(budget_change * 0.1)
+        )
+
+        extra_spend += budget_change
 
         base_user_growth = decision.get("user_growth", 0)
 
         # -----------------------------
         # Growth Multipliers
         # -----------------------------
-        quality_multiplier = max(0.5, company.product_quality / 10)
-        reputation_multiplier = max(0.5, company.reputation / 10)
+        quality_multiplier = max(0.6, company.product_quality / 10)
+        reputation_multiplier = max(0.6, company.reputation / 10)
 
         adjusted_user_growth = (
-            base_user_growth * quality_multiplier * reputation_multiplier
+            base_user_growth
+            * quality_multiplier
+            * reputation_multiplier
         )
 
         # Reputation penalties
         if company.reputation < 5:
-            adjusted_user_growth *= 0.6
+            adjusted_user_growth *= 0.75
 
         if company.reputation < 4:
-            adjusted_user_growth *= 0.3
+            adjusted_user_growth *= 0.5
 
-        # Apply growth
-        company.users += int(company.users * adjusted_user_growth)
+        # -----------------------------
+        # Marketing Multiplier
+        # -----------------------------
+        marketing_multiplier = 1 + (
+            (company.marketing_budget - 2000) / 10000
+        )
 
-        # SaaS revenue model
+        adjusted_user_growth *= max(0.5, marketing_multiplier)
+
+        # -----------------------------
+        # User Acquisition
+        # -----------------------------
+        new_users = int(company.users * adjusted_user_growth)
+
+        company.users += new_users
+
+        # SaaS Revenue Model
         company.revenue = int(company.users * company.arpu)
 
         # -----------------------------
@@ -71,12 +94,16 @@ def apply_decision(company, decision, event):
         if "tech_impact" in decision:
 
             tech = decision["tech_impact"]
-            quality_change = tech.get("product_quality_change", 0)
 
-            # Redirect overflow improvements
+            quality_change = tech.get(
+                "product_quality_change",
+                0
+            )
+
             if company.product_quality >= 9.5:
 
                 company.reputation += quality_change * 0.3
+
                 company.technical_debt = max(
                     0,
                     company.technical_debt - 0.05
@@ -99,10 +126,15 @@ def apply_decision(company, decision, event):
     # -----------------------------
     # Engineer Hiring Scaling
     # -----------------------------
-    required_engineers = max(3, int(company.users / 800))
+    target_engineers = max(3, int(company.users / 1000))
 
-    if required_engineers > company.engineers:
-        company.engineers = required_engineers
+    if target_engineers > company.engineers:
+
+        hires = target_engineers - company.engineers
+
+        company.engineers += hires
+
+        print(f"   👷 Hired {hires} engineer(s)")
 
     # -----------------------------
     # Apply Technical Debt Model
@@ -157,6 +189,17 @@ def apply_decision(company, decision, event):
         )
 
     # -----------------------------
+    # Natural Product Improvement
+    # (Fix for quality ceiling)
+    # -----------------------------
+    if company.technical_debt == 0:
+
+        company.product_quality = min(
+            10,
+            company.product_quality + 0.05
+        )
+
+    # -----------------------------
     # Metric Bounds
     # -----------------------------
     company.product_quality = max(
@@ -164,7 +207,6 @@ def apply_decision(company, decision, event):
         min(company.product_quality, 10)
     )
 
-    # Reputation floor prevents collapse
     company.reputation = max(
         1.0,
         min(company.reputation, 10)

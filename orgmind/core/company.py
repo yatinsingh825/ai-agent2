@@ -14,7 +14,7 @@ class Company:
         self.cash = config.INITIAL_CASH
         self.users = config.INITIAL_USERS
 
-        # Track previous metrics for growth calculations
+        # Track previous metrics
         self.prev_users = self.users
         self.prev_revenue = self.revenue
 
@@ -83,9 +83,7 @@ class Company:
             + ops_cost
         )
 
-        burn = max(0, burn)
-
-        return burn
+        return max(0, burn)
 
     # -----------------------------
     # Runway Calculation
@@ -95,9 +93,23 @@ class Company:
         if self.burn_rate <= 0:
             return float("inf")
 
-        runway = self.cash / self.burn_rate
+        return round(self.cash / self.burn_rate, 2)
 
-        return round(runway, 2)
+    # -----------------------------
+    # Market Cap Update
+    # -----------------------------
+    def update_market_cap(self):
+
+        if self.is_public:
+            self.market_cap = int(self.share_price * self.total_shares)
+
+    # -----------------------------
+    # Monthly Metrics Update
+    # -----------------------------
+    def update_growth_history(self):
+
+        self.prev_users = self.users
+        self.prev_revenue = self.revenue
 
     # -----------------------------
     # Company Summary
@@ -118,16 +130,16 @@ class Company:
             "infra_cost": self.infra_cost,
             "operations_cost": self.operations_cost,
 
-            "product_quality": self.product_quality,
-            "reputation": self.reputation,
-            "technical_debt": self.technical_debt,
+            "product_quality": round(self.product_quality, 2),
+            "reputation": round(self.reputation, 2),
+            "technical_debt": round(self.technical_debt, 2),
 
-            "valuation": self.valuation,
+            "valuation": int(self.valuation),
             "founder_ownership": round(self.founder_ownership, 2),
             "last_funding_round": self.last_funding_round,
             "months_since_funding": self.months_since_funding,
 
             "is_public": self.is_public,
-            "share_price": self.share_price,
-            "market_cap": self.market_cap,
+            "share_price": round(self.share_price, 2),
+            "market_cap": int(self.market_cap),
         }

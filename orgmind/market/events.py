@@ -1,5 +1,6 @@
 import random
 
+
 EVENTS = [
     {
         "name": "Positive Press Coverage",
@@ -13,25 +14,37 @@ EVENTS = [
     },
     {
         "name": "Competitor Launch",
-        "impact": {"reputation": -0.5},
-        "weight": 25
+        "impact": {"reputation": -0.4},
+        "weight": 22
     },
     {
         "name": "Tech Infrastructure Issue",
         "impact": {"product_quality": -0.7},
-        "weight": 20
+        "weight": 15
     },
+    {
+        "name": "Regulatory Tailwind",
+        "impact": {"reputation": 0.4, "users": 0.05},
+        "weight": 8
+    }
 ]
 
 
 def generate_event():
+    """
+    Select a market event using weighted probability.
+    """
 
-    weights = [event["weight"] for event in EVENTS]
+    total_weight = sum(event["weight"] for event in EVENTS)
+    roll = random.uniform(0, total_weight)
 
-    chosen_event = random.choices(
-        EVENTS,
-        weights=weights,
-        k=1
-    )[0]
+    cumulative = 0
 
-    return chosen_event
+    for event in EVENTS:
+        cumulative += event["weight"]
+
+        if roll <= cumulative:
+            return event
+
+    # fallback (should never happen)
+    return EVENTS[0]

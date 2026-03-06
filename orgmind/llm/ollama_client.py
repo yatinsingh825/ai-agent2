@@ -6,18 +6,22 @@ import sys
 def generate_response(prompt, retries=1):
     """
     Send prompt to Ollama and return model response.
-    Includes retry logic and safer error handling.
+    Includes retry logic and stdout protection to prevent
+    streaming collisions with the simulation loop.
     """
 
     payload = {
         "model": config.MODEL_NAME,
         "prompt": prompt,
-        "stream": False
+        "stream": False  # CRITICAL: prevents streaming corruption
     }
 
     for attempt in range(retries + 1):
 
         try:
+            # Flush stdout BEFORE request to avoid mixed prints
+            sys.stdout.flush()
+
             response = requests.post(
                 config.OLLAMA_URL,
                 json=payload,
@@ -33,14 +37,22 @@ def generate_response(prompt, retries=1):
             if "response" not in data:
                 raise Exception(f"Invalid Ollama response: {data}")
 
+            result = data["response"]
+
+            # Clean response to avoid weird console artifacts
+            if isinstance(result, str):
+                result = result.strip()
+
+            # Flush again after processing
             sys.stdout.flush()
 
-            return data["response"]
+            return result
 
         except Exception as e:
 
             if attempt == retries:
-                print(f"[LLM ERROR] {e}")
+                sys.stdout.flush()
+                print(f"\n[LLM ERROR] {e}")
                 return ""
 
     return ""
