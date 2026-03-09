@@ -13,6 +13,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import sys, os, threading, time, queue, uuid
 from datetime import datetime
+from dashboard.outcome_summary import render_outcome_summary
 
 # ── Add orgmind root to path so we can import all your modules ────────────────
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -770,8 +771,9 @@ def page_sim():
     st.markdown("<div style='height:2px'></div>", unsafe_allow_html=True)
 
     # ── TABS ─────────────────────────────────────────────────────────────────
-    t_war, t_charts, t_stock, t_timeline, t_new = st.tabs([
-        "💬  War Room", "📊  Analytics", "📈  Stock Market", "📋  Timeline", "↺  New Sim"
+    t_war, t_charts, t_stock, t_timeline, t_summary, t_new = st.tabs([
+    "💬  War Room", "📊  Analytics", "📈  Stock Market",
+    "📋  Timeline", "🏆  Final Report", "↺  New Sim"
     ])
 
     # ══════════ WAR ROOM ══════════════════════════════════════════════════════
@@ -1076,6 +1078,16 @@ def page_sim():
             </div>""", unsafe_allow_html=True)
 
         st.markdown("</div>", unsafe_allow_html=True)
+
+    with t_summary:
+        render_outcome_summary(
+            history = st.session_state.get("kpi_history", []),
+            candles = st.session_state.get("candles", []),
+            events  = st.session_state.get("funding_events", []),
+            final   = st.session_state.get("final_state"),
+            cfg     = st.session_state.get("company_config", {}),
+            running = st.session_state.get("sim_running", False),
+        )
 
     # ══════════ NEW SIMULATION ════════════════════════════════════════════════
     with t_new:
